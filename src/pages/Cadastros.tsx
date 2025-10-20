@@ -10,6 +10,7 @@ import { SupplierDialog } from '@/components/cadastros/SupplierDialog';
 import { ClientDialog } from '@/components/cadastros/ClientDialog';
 import { CollectionPointDialog } from '@/components/cadastros/CollectionPointDialog';
 import { ProductTypeDialog } from '@/components/cadastros/ProductTypeDialog';
+import { Supplier, Client, CollectionPoint, ProductType } from '@/types';
 
 export default function Cadastros() {
   const [activeTab, setActiveTab] = useState('suppliers');
@@ -17,22 +18,50 @@ export default function Cadastros() {
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [pointDialogOpen, setPointDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | undefined>();
+  const [editingClient, setEditingClient] = useState<Client | undefined>();
+  const [editingPoint, setEditingPoint] = useState<CollectionPoint | undefined>();
+  const [editingProduct, setEditingProduct] = useState<ProductType | undefined>();
 
   const handleAddNew = () => {
     switch (activeTab) {
       case 'suppliers':
+        setEditingSupplier(undefined);
         setSupplierDialogOpen(true);
         break;
       case 'clients':
+        setEditingClient(undefined);
         setClientDialogOpen(true);
         break;
       case 'points':
+        setEditingPoint(undefined);
         setPointDialogOpen(true);
         break;
       case 'products':
+        setEditingProduct(undefined);
         setProductDialogOpen(true);
         break;
     }
+  };
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setSupplierDialogOpen(true);
+  };
+
+  const handleEditClient = (client: Client) => {
+    setEditingClient(client);
+    setClientDialogOpen(true);
+  };
+
+  const handleEditPoint = (point: CollectionPoint) => {
+    setEditingPoint(point);
+    setPointDialogOpen(true);
+  };
+
+  const handleEditProduct = (product: ProductType) => {
+    setEditingProduct(product);
+    setProductDialogOpen(true);
   };
 
   return (
@@ -54,26 +83,42 @@ export default function Cadastros() {
         </TabsList>
 
         <TabsContent value="suppliers">
-          <SuppliersTab onEdit={() => {}} />
+          <SuppliersTab onEdit={handleEditSupplier} />
         </TabsContent>
 
         <TabsContent value="clients">
-          <ClientsTab onEdit={() => {}} />
+          <ClientsTab onEdit={handleEditClient} />
         </TabsContent>
 
         <TabsContent value="points">
-          <CollectionPointsTab onEdit={() => {}} />
+          <CollectionPointsTab onEdit={handleEditPoint} />
         </TabsContent>
 
         <TabsContent value="products">
-          <ProductTypesTab onEdit={() => {}} />
+          <ProductTypesTab onEdit={handleEditProduct} />
         </TabsContent>
       </Tabs>
 
-      <SupplierDialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen} />
-      <ClientDialog open={clientDialogOpen} onOpenChange={setClientDialogOpen} />
-      <CollectionPointDialog open={pointDialogOpen} onOpenChange={setPointDialogOpen} />
-      <ProductTypeDialog open={productDialogOpen} onOpenChange={setProductDialogOpen} />
+      <SupplierDialog 
+        open={supplierDialogOpen} 
+        onOpenChange={setSupplierDialogOpen} 
+        supplier={editingSupplier}
+      />
+      <ClientDialog 
+        open={clientDialogOpen} 
+        onOpenChange={setClientDialogOpen}
+        client={editingClient}
+      />
+      <CollectionPointDialog 
+        open={pointDialogOpen} 
+        onOpenChange={setPointDialogOpen}
+        point={editingPoint}
+      />
+      <ProductTypeDialog 
+        open={productDialogOpen} 
+        onOpenChange={setProductDialogOpen}
+        product={editingProduct}
+      />
     </div>
   );
 }

@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Client } from '@/types';
+
 interface ClientsTabProps {
-  onEdit: (id: string) => void;
+  onEdit: (client: Client) => void;
 }
 
 export function ClientsTab({ onEdit }: ClientsTabProps) {
@@ -52,7 +54,7 @@ export function ClientsTab({ onEdit }: ClientsTabProps) {
               <p className="text-sm text-muted-foreground">{client.address}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={() => onEdit(client.id)}>
+              <Button variant="outline" size="icon" onClick={() => onEdit(client)}>
                 <Edit className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon" onClick={() => handleDelete(client.id, client.name)}>

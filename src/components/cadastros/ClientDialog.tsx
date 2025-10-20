@@ -1,102 +1,175 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { toast } from 'sonner';
+import InputMask from 'react-input-mask';
+import { Client } from '@/types';
+
+const clientSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
+  document: z.string().min(1, 'CPF/CNPJ é obrigatório'),
+  phone: z.string().min(1, 'Telefone é obrigatório'),
+  email: z.string().email('E-mail inválido'),
+  address: z.string().min(1, 'Endereço é obrigatório'),
+});
+
+type ClientFormData = z.infer<typeof clientSchema>;
 
 interface ClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  client?: Client;
 }
 
-export function ClientDialog({ open, onOpenChange }: ClientDialogProps) {
-  const { addClient } = useData();
-  const [formData, setFormData] = useState({
-    name: '',
-    document: '',
-    phone: '',
-    email: '',
-    address: '',
-  });
+export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) {
+  const { addClient, updateClient } = useData();
+  const isEditing = !!client;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addClient(formData);
-    toast.success('Cliente cadastrado com sucesso');
-    onOpenChange(false);
-    setFormData({
+  const form = useForm<ClientFormData>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: {
       name: '',
       document: '',
       phone: '',
       email: '',
       address: '',
-    });
+    },
+  });
+
+  useEffect(() => {
+    if (client) {
+      form.reset({
+        name: client.name,
+        document: client.document,
+        phone: client.phone,
+        email: client.email,
+        address: client.address,
+      });
+    } else {
+      form.reset({
+        name: '',
+        document: '',
+        phone: '',
+        email: '',
+        address: '',
+      });
+    }
+  }, [client, form, open]);
+
+  const onSubmit = (data: ClientFormData) => {
+    if (isEditing && client) {
+      updateClient(client.id, data as Omit<Client, 'id' | 'createdAt'>);
+      toast.success('Cliente atualizado com sucesso');
+    } else {
+      addClient(data as Omit<Client, 'id' | 'createdAt'>);
+      toast.success('Cliente cadastrado com sucesso');
+    }
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Novo Cliente</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome/Razão Social *</Label>
-              <Input
-                id="name"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome/Razão Social *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="document"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CNPJ/CPF *</FormLabel>
+                    <FormControl>
+                      <InputMask
+                        mask={field.value?.length <= 14 ? '999.999.999-99' : '99.999.999/9999-99'}
+                        value={field.value}
+                        onChange={field.onChange}
+                      >
+                        {/* @ts-ignore */}
+                        {(inputProps: any) => <Input {...inputProps} />}
+                      </InputMask>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone *</FormLabel>
+                    <FormControl>
+                      <InputMask
+                        mask="(99) 99999-9999"
+                        value={field.value}
+                        onChange={field.onChange}
+                      >
+                        {/* @ts-ignore */}
+                        {(inputProps: any) => <Input {...inputProps} />}
+                      </InputMask>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>E-mail *</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Endereço *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="document">CNPJ/CPF *</Label>
-              <Input
-                id="document"
-                required
-                value={formData.document}
-                onChange={(e) => setFormData({ ...formData, document: e.target.value })}
-              />
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">{isEditing ? 'Atualizar' : 'Cadastrar'}</Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone *</Label>
-              <Input
-                id="phone"
-                required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail *</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="address">Endereço *</Label>
-              <Input
-                id="address"
-                required
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">Cadastrar</Button>
-          </div>
-        </form>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

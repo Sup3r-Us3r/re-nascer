@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { ProductType } from '@/types';
+
 interface ProductTypesTabProps {
-  onEdit: (id: string) => void;
+  onEdit: (product: ProductType) => void;
 }
 
 export function ProductTypesTab({ onEdit }: ProductTypesTabProps) {
@@ -48,7 +50,7 @@ export function ProductTypesTab({ onEdit }: ProductTypesTabProps) {
               <p className="mt-1 text-sm font-medium text-accent">Unidade: {product.unit}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={() => onEdit(product.id)}>
+              <Button variant="outline" size="icon" onClick={() => onEdit(product)}>
                 <Edit className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon" onClick={() => handleDelete(product.id, product.name)}>

@@ -1,102 +1,168 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { toast } from 'sonner';
+import InputMask from 'react-input-mask';
+import { CollectionPoint } from '@/types';
+
+const pointSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
+  address: z.string().min(1, 'Endereço é obrigatório'),
+  phone: z.string().min(1, 'Telefone é obrigatório'),
+  email: z.string().email('E-mail inválido'),
+  responsible: z.string().min(1, 'Responsável é obrigatório'),
+});
+
+type PointFormData = z.infer<typeof pointSchema>;
 
 interface CollectionPointDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  point?: CollectionPoint;
 }
 
-export function CollectionPointDialog({ open, onOpenChange }: CollectionPointDialogProps) {
-  const { addCollectionPoint } = useData();
-  const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    phone: '',
-    email: '',
-    responsible: '',
-  });
+export function CollectionPointDialog({ open, onOpenChange, point }: CollectionPointDialogProps) {
+  const { addCollectionPoint, updateCollectionPoint } = useData();
+  const isEditing = !!point;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    addCollectionPoint(formData);
-    toast.success('Ponto de coleta cadastrado com sucesso');
-    onOpenChange(false);
-    setFormData({
+  const form = useForm<PointFormData>({
+    resolver: zodResolver(pointSchema),
+    defaultValues: {
       name: '',
       address: '',
       phone: '',
       email: '',
       responsible: '',
-    });
+    },
+  });
+
+  useEffect(() => {
+    if (point) {
+      form.reset({
+        name: point.name,
+        address: point.address,
+        phone: point.phone,
+        email: point.email,
+        responsible: point.responsible,
+      });
+    } else {
+      form.reset({
+        name: '',
+        address: '',
+        phone: '',
+        email: '',
+        responsible: '',
+      });
+    }
+  }, [point, form, open]);
+
+  const onSubmit = (data: PointFormData) => {
+    if (isEditing && point) {
+      updateCollectionPoint(point.id, data as Omit<CollectionPoint, 'id' | 'createdAt'>);
+      toast.success('Ponto de coleta atualizado com sucesso');
+    } else {
+      addCollectionPoint(data as Omit<CollectionPoint, 'id' | 'createdAt'>);
+      toast.success('Ponto de coleta cadastrado com sucesso');
+    }
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Novo Ponto de Coleta</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Ponto de Coleta' : 'Novo Ponto de Coleta'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome *</Label>
-              <Input
-                id="name"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="responsible"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Responsável *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem className="col-span-2">
+                    <FormLabel>Endereço *</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone *</FormLabel>
+                    <FormControl>
+                      <InputMask
+                        mask="(99) 99999-9999"
+                        value={field.value}
+                        onChange={field.onChange}
+                      >
+                        {/* @ts-ignore */}
+                        {(inputProps: any) => <Input {...inputProps} />}
+                      </InputMask>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>E-mail *</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="responsible">Responsável *</Label>
-              <Input
-                id="responsible"
-                required
-                value={formData.responsible}
-                onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
-              />
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">{isEditing ? 'Atualizar' : 'Cadastrar'}</Button>
             </div>
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="address">Endereço *</Label>
-              <Input
-                id="address"
-                required
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone *</Label>
-              <Input
-                id="phone"
-                required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail *</Label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">Cadastrar</Button>
-          </div>
-        </form>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

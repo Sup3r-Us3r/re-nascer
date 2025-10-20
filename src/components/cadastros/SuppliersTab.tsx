@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { Supplier } from '@/types';
+
 interface SuppliersTabProps {
-  onEdit: (id: string) => void;
+  onEdit: (supplier: Supplier) => void;
 }
 
 export function SuppliersTab({ onEdit }: SuppliersTabProps) {
@@ -66,7 +68,7 @@ export function SuppliersTab({ onEdit }: SuppliersTabProps) {
               <p className="mt-1 text-sm font-medium text-accent">Material: {supplier.materialType}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={() => onEdit(supplier.id)}>
+              <Button variant="outline" size="icon" onClick={() => onEdit(supplier)}>
                 <Edit className="h-4 w-4" />
               </Button>
               <Button

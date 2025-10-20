@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { CollectionPoint } from '@/types';
+
 interface CollectionPointsTabProps {
-  onEdit: (id: string) => void;
+  onEdit: (point: CollectionPoint) => void;
 }
 
 export function CollectionPointsTab({ onEdit }: CollectionPointsTabProps) {
@@ -51,7 +53,7 @@ export function CollectionPointsTab({ onEdit }: CollectionPointsTabProps) {
               <p className="mt-1 text-sm font-medium text-accent">Responsável: {point.responsible}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={() => onEdit(point.id)}>
+              <Button variant="outline" size="icon" onClick={() => onEdit(point)}>
                 <Edit className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon" onClick={() => handleDelete(point.id, point.name)}>
