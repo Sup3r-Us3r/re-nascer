@@ -5,19 +5,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import InputMask from 'react-input-mask';
+import { format, parse, isValid } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const collectionSchema = z.object({
   supplierId: z.string().min(1, 'Fornecedor é obrigatório'),
-  date: z.string().min(1, 'Data é obrigatória'),
+  date: z.date({ required_error: 'Data é obrigatória', invalid_type_error: 'Data inválida' }),
   time: z.string().min(1, 'Hora é obrigatória'),
   location: z.string().min(1, 'Localização é obrigatória'),
-  weight: z.string().min(1, 'Peso é obrigatório'),
-  value: z.string().min(1, 'Valor é obrigatório'),
+  weight: z.string().min(1, 'Peso é obrigatório').refine((val) => !isNaN(parseFloat(val.replace(',', '.'))), 'Peso inválido'),
+  value: z.string().min(1, 'Valor é obrigatório').refine((val) => !isNaN(parseFloat(val.replace(/[R$\s.]/g, '').replace(',', '.'))), 'Valor inválido'),
   status: z.enum(['agendado', 'confirmado', 'coletado']),
 });
 
@@ -35,7 +39,7 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
     resolver: zodResolver(collectionSchema),
     defaultValues: {
       supplierId: '',
-      date: '',
+      date: undefined,
       time: '',
       location: '',
       weight: '',
@@ -46,15 +50,17 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
 
   useEffect(() => {
     if (!open) {
-      form.reset();
+      form.reset({
+        supplierId: '',
+        date: undefined,
+        time: '',
+        location: '',
+        weight: '',
+        value: '',
+        status: 'agendado',
+      });
     }
   }, [open, form]);
-
-  const formatDateToBR = (dateStr: string) => {
-    if (!dateStr || !dateStr.includes('-')) return dateStr;
-    const [year, month, day] = dateStr.split('-');
-    return `${day}/${month}/${year}`;
-  };
 
   const onSubmit = (data: CollectionFormData) => {
     const supplier = suppliers.find((s) => s.id === data.supplierId);
@@ -64,11 +70,11 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
       supplierId: data.supplierId,
       supplierName: supplier.name,
       supplierType: supplier.type,
-      date: data.date,
+      date: format(data.date, 'yyyy-MM-dd'),
       time: data.time,
       location: data.location,
-      weight: parseFloat(data.weight.replace(/\./g, '').replace(',', '.')),
-      value: parseFloat(data.value.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.')),
+      weight: parseFloat(data.weight.replace(',', '.')),
+      value: parseFloat(data.value.replace(/[R$\s.]/g, '').replace(',', '.')),
       status: data.status,
     });
     toast.success('Coleta agendada com sucesso');
@@ -134,24 +140,37 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
                 control={form.control}
                 name="date"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Data *</FormLabel>
-                    <FormControl>
-                      <InputMask
-                        mask="99/99/9999"
-                        value={field.value ? formatDateToBR(field.value) : ''}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const [day, month, year] = value.split('/');
-                          if (day && month && year && year.length === 4) {
-                            field.onChange(`${year}-${month}-${day}`);
-                          }
-                        }}
-                      >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} placeholder="DD/MM/AAAA" />}
-                      </InputMask>
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "dd/MM/yyyy")
+                            ) : (
+                              <span>Selecione a data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -189,14 +208,17 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
                   <FormItem>
                     <FormLabel>Peso (kg) *</FormLabel>
                     <FormControl>
-                      <InputMask
-                        mask="999999.99"
-                        value={field.value}
-                        onChange={field.onChange}
-                      >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} placeholder="0.00" />}
-                      </InputMask>
+                      <Input
+                        {...field}
+                        placeholder="0,00"
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^\d,]/g, '');
+                          const parts = value.split(',');
+                          if (parts.length > 2) return;
+                          if (parts[1] && parts[1].length > 2) return;
+                          field.onChange(value);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -209,14 +231,25 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
                   <FormItem>
                     <FormLabel>Valor (R$) *</FormLabel>
                     <FormControl>
-                      <InputMask
-                        mask="R$ 999.999.999,99"
-                        value={field.value}
-                        onChange={field.onChange}
-                      >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} placeholder="R$ 0,00" />}
-                      </InputMask>
+                      <Input
+                        {...field}
+                        placeholder="R$ 0,00"
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/\D/g, '');
+                          if (value === '') {
+                            field.onChange('');
+                            return;
+                          }
+                          const numValue = parseInt(value) / 100;
+                          const formatted = numValue.toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          });
+                          field.onChange(formatted);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

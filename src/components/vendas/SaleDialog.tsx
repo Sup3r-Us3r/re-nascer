@@ -9,13 +9,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import InputMask from 'react-input-mask';
 
 const saleSchema = z.object({
   clientId: z.string().min(1, 'Cliente é obrigatório'),
   productType: z.string().min(1, 'Tipo de produto é obrigatório'),
-  weight: z.string().min(1, 'Peso é obrigatório'),
-  value: z.string().min(1, 'Valor é obrigatório'),
+  weight: z.string().min(1, 'Peso é obrigatório').refine((val) => !isNaN(parseFloat(val.replace(',', '.'))), 'Peso inválido'),
+  value: z.string().min(1, 'Valor é obrigatório').refine((val) => !isNaN(parseFloat(val.replace(/[R$\s.]/g, '').replace(',', '.'))), 'Valor inválido'),
   date: z.string().min(1, 'Data é obrigatória'),
 });
 
@@ -60,8 +59,8 @@ export function SaleDialog({ open, onOpenChange }: SaleDialogProps) {
       clientId: data.clientId,
       clientName: client.name,
       productType: data.productType,
-      weight: parseFloat(data.weight.replace(/\./g, '').replace(',', '.')),
-      value: parseFloat(data.value.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.')),
+      weight: parseFloat(data.weight.replace(',', '.')),
+      value: parseFloat(data.value.replace(/[R$\s.]/g, '').replace(',', '.')),
       date: data.date,
     });
     toast.success('Venda registrada com sucesso');
@@ -145,14 +144,17 @@ export function SaleDialog({ open, onOpenChange }: SaleDialogProps) {
                   <FormItem>
                     <FormLabel>Peso (kg) *</FormLabel>
                     <FormControl>
-                      <InputMask
-                        mask="999999.99"
-                        value={field.value}
-                        onChange={field.onChange}
-                      >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} placeholder="0.00" />}
-                      </InputMask>
+                      <Input
+                        {...field}
+                        placeholder="0,00"
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^\d,]/g, '');
+                          const parts = value.split(',');
+                          if (parts.length > 2) return;
+                          if (parts[1] && parts[1].length > 2) return;
+                          field.onChange(value);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -165,14 +167,25 @@ export function SaleDialog({ open, onOpenChange }: SaleDialogProps) {
                   <FormItem className="col-span-2">
                     <FormLabel>Valor (R$) *</FormLabel>
                     <FormControl>
-                      <InputMask
-                        mask="R$ 999.999.999,99"
-                        value={field.value}
-                        onChange={field.onChange}
-                      >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} placeholder="R$ 0,00" />}
-                      </InputMask>
+                      <Input
+                        {...field}
+                        placeholder="R$ 0,00"
+                        onChange={(e) => {
+                          let value = e.target.value.replace(/\D/g, '');
+                          if (value === '') {
+                            field.onChange('');
+                            return;
+                          }
+                          const numValue = parseInt(value) / 100;
+                          const formatted = numValue.toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          });
+                          field.onChange(formatted);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

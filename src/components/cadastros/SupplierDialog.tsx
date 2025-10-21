@@ -113,7 +113,7 @@ export function SupplierDialog({ open, onOpenChange, supplier }: SupplierDialogP
                     <FormLabel>CNPJ/CPF *</FormLabel>
                     <FormControl>
                       <InputMask
-                        mask={field.value?.length <= 14 ? '999.999.999-99' : '99.999.999/9999-99'}
+                        mask={field.value?.replace(/\D/g, '').length <= 11 ? '999.999.999-999' : '99.999.999/9999-99'}
                         value={field.value}
                         onChange={field.onChange}
                       >
