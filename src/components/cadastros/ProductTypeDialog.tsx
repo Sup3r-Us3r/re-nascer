@@ -1,9 +1,21 @@
-import { useEffect } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useEffect, useState } from 'react';
+import { useData } from '@/hooks/useData';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,7 +24,10 @@ import { ProductType } from '@/types';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
-  description: z.string().min(1, 'Descrição é obrigatória').max(200, 'Descrição muito longa'),
+  description: z
+    .string()
+    .min(1, 'Descrição é obrigatória')
+    .max(200, 'Descrição muito longa'),
   unit: z.string().min(1, 'Unidade é obrigatória'),
 });
 
@@ -24,8 +39,13 @@ interface ProductTypeDialogProps {
   product?: ProductType;
 }
 
-export function ProductTypeDialog({ open, onOpenChange, product }: ProductTypeDialogProps) {
+export function ProductTypeDialog({
+  open,
+  onOpenChange,
+  product,
+}: ProductTypeDialogProps) {
   const { addProductType, updateProductType } = useData();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!product;
 
   const form = useForm<ProductFormData>({
@@ -53,22 +73,34 @@ export function ProductTypeDialog({ open, onOpenChange, product }: ProductTypeDi
     }
   }, [product, form, open]);
 
-  const onSubmit = (data: ProductFormData) => {
-    if (isEditing && product) {
-      updateProductType(product.id, data as Omit<ProductType, 'id' | 'createdAt'>);
-      toast.success('Tipo de produto atualizado com sucesso');
-    } else {
-      addProductType(data as Omit<ProductType, 'id' | 'createdAt'>);
-      toast.success('Tipo de produto cadastrado com sucesso');
+  const onSubmit = async (data: ProductFormData) => {
+    setIsSubmitting(true);
+    try {
+      if (isEditing && product) {
+        await updateProductType(
+          product.id,
+          data as Omit<ProductType, 'id' | 'createdAt'>
+        );
+        toast.success('Tipo de produto atualizado com sucesso');
+      } else {
+        await addProductType(data as Omit<ProductType, 'id' | 'createdAt'>);
+        toast.success('Tipo de produto cadastrado com sucesso');
+      }
+      onOpenChange(false);
+    } catch (error) {
+      // Error handling is done in the DataContext
+    } finally {
+      setIsSubmitting(false);
     }
-    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Tipo de Produto' : 'Novo Tipo de Produto'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Editar Tipo de Produto' : 'Novo Tipo de Produto'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -112,10 +144,21 @@ export function ProductTypeDialog({ open, onOpenChange, product }: ProductTypeDi
               )}
             />
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">{isEditing ? 'Atualizar' : 'Cadastrar'}</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? 'Processando...'
+                  : isEditing
+                  ? 'Atualizar'
+                  : 'Cadastrar'}
+              </Button>
             </div>
           </form>
         </Form>

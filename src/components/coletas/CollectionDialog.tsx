@@ -1,11 +1,33 @@
 import { useEffect } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useData } from '@/hooks/useData';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,11 +39,28 @@ import { cn } from '@/lib/utils';
 
 const collectionSchema = z.object({
   supplierId: z.string().min(1, 'Fornecedor é obrigatório'),
-  date: z.date({ required_error: 'Data é obrigatória', invalid_type_error: 'Data inválida' }),
+  productId: z.string().min(1, 'Tipo de produto é obrigatório'),
+  date: z.date({
+    required_error: 'Data é obrigatória',
+    invalid_type_error: 'Data inválida',
+  }),
   time: z.string().min(1, 'Hora é obrigatória'),
   location: z.string().min(1, 'Localização é obrigatória'),
-  weight: z.string().min(1, 'Peso é obrigatório').refine((val) => !isNaN(parseFloat(val.replace(',', '.'))), 'Peso inválido'),
-  value: z.string().min(1, 'Valor é obrigatório').refine((val) => !isNaN(parseFloat(val.replace(/[R$\s.]/g, '').replace(',', '.'))), 'Valor inválido'),
+  weight: z
+    .string()
+    .min(1, 'Peso é obrigatório')
+    .refine(
+      (val) => !isNaN(parseFloat(val.replace(',', '.'))),
+      'Peso inválido'
+    ),
+  value: z
+    .string()
+    .min(1, 'Valor é obrigatório')
+    .refine(
+      (val) =>
+        !isNaN(parseFloat(val.replace(/[R$\s.]/g, '').replace(',', '.'))),
+      'Valor inválido'
+    ),
   status: z.enum(['agendado', 'confirmado', 'coletado']),
 });
 
@@ -32,13 +71,17 @@ interface CollectionDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) {
-  const { suppliers, addCollection } = useData();
+export function CollectionDialog({
+  open,
+  onOpenChange,
+}: CollectionDialogProps) {
+  const { suppliers, productTypes, addCollection } = useData();
 
   const form = useForm<CollectionFormData>({
     resolver: zodResolver(collectionSchema),
     defaultValues: {
       supplierId: '',
+      productId: '',
       date: undefined,
       time: '',
       location: '',
@@ -52,6 +95,7 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
     if (!open) {
       form.reset({
         supplierId: '',
+        productId: '',
         date: undefined,
         time: '',
         location: '',
@@ -62,23 +106,30 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
     }
   }, [open, form]);
 
-  const onSubmit = (data: CollectionFormData) => {
-    const supplier = suppliers.find((s) => s.id === data.supplierId);
-    if (!supplier) return;
+  const onSubmit = async (data: CollectionFormData) => {
+    try {
+      const supplier = suppliers.find((s) => s.id === data.supplierId);
+      if (!supplier) {
+        toast.error('Fornecedor não encontrado');
+        return;
+      }
 
-    addCollection({
-      supplierId: data.supplierId,
-      supplierName: supplier.name,
-      supplierType: supplier.type,
-      date: format(data.date, 'yyyy-MM-dd'),
-      time: data.time,
-      location: data.location,
-      weight: parseFloat(data.weight.replace(',', '.')),
-      value: parseFloat(data.value.replace(/[R$\s.]/g, '').replace(',', '.')),
-      status: data.status,
-    });
-    toast.success('Coleta agendada com sucesso');
-    onOpenChange(false);
+      await addCollection({
+        supplierId: data.supplierId,
+        supplierType: supplier.type,
+        productId: data.productId,
+        date: format(data.date, 'yyyy-MM-dd'),
+        time: data.time,
+        location: data.location,
+        weight: parseFloat(data.weight.replace(',', '.')),
+        value: parseFloat(data.value.replace(/[R$\s.]/g, '').replace(',', '.')),
+        status: data.status,
+      });
+      toast.success('Coleta agendada com sucesso');
+      onOpenChange(false);
+    } catch (error) {
+      // Error handling is done in the DataContext
+    }
   };
 
   return (
@@ -116,6 +167,32 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
               />
               <FormField
                 control={form.control}
+                name="productId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Produto *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o produto" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {productTypes.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
@@ -148,12 +225,12 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
+                              'w-full pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
+                              format(field.value, 'dd/MM/yyyy')
                             ) : (
                               <span>Selecione a data</span>
                             )}
@@ -235,7 +312,7 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
                         {...field}
                         placeholder="R$ 0,00"
                         onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, '');
+                          const value = e.target.value.replace(/\D/g, '');
                           if (value === '') {
                             field.onChange('');
                             return;
@@ -257,7 +334,11 @@ export function CollectionDialog({ open, onOpenChange }: CollectionDialogProps) 
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
               <Button type="submit">Agendar</Button>

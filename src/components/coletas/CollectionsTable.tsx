@@ -1,15 +1,26 @@
 import { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
+import { useData } from '@/hooks/useData';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Edit, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function CollectionsTable() {
-  const { collections, deleteCollection, updateCollection } = useData();
+  const {
+    collections,
+    deleteCollection,
+    updateCollectionStatus,
+    collectionsLoading,
+  } = useData();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -21,16 +32,27 @@ export function CollectionsTable() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Deseja realmente excluir esta coleta?')) {
-      deleteCollection(id);
-      toast.success('Coleta excluída com sucesso');
+      try {
+        await deleteCollection(id);
+        toast.success('Coleta excluída com sucesso');
+      } catch (error) {
+        // Error handling is done in the DataContext
+      }
     }
   };
 
-  const handleStatusChange = (id: string, status: string) => {
-    updateCollection(id, { status: status as any });
-    toast.success('Status atualizado com sucesso');
+  const handleStatusChange = async (id: string, status: string) => {
+    try {
+      await updateCollectionStatus(
+        id,
+        status as 'agendado' | 'confirmado' | 'coletado'
+      );
+      toast.success('Status atualizado com sucesso');
+    } catch (error) {
+      // Error handling is done in the DataContext
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -68,49 +90,80 @@ export function CollectionsTable() {
       </div>
 
       <div className="space-y-4">
-        {filteredCollections.map((collection) => (
-          <div key={collection.id} className="rounded-lg border border-border p-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-foreground">{collection.supplierName}</h3>
-                  <Badge className={getStatusColor(collection.status)}>
-                    {collection.status.charAt(0).toUpperCase() + collection.status.slice(1)}
-                  </Badge>
-                  <Badge variant="outline">{collection.supplierType}</Badge>
+        {collectionsLoading ? (
+          <div className="py-8 text-center">
+            <p className="text-muted-foreground">Carregando coletas...</p>
+          </div>
+        ) : filteredCollections.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground">
+            Nenhuma coleta encontrada
+          </p>
+        ) : (
+          filteredCollections.map((collection) => (
+            <div
+              key={collection.id}
+              className="rounded-lg border border-border p-4"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground">
+                      {collection.supplierName}
+                    </h3>
+                    <Badge className={getStatusColor(collection.status)}>
+                      {collection.status.charAt(0).toUpperCase() +
+                        collection.status.slice(1)}
+                    </Badge>
+                    <Badge variant="outline">{collection.supplierType}</Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    📅 {new Date(collection.date).toLocaleDateString('pt-BR')}{' '}
+                    às {collection.time}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    📍 {collection.location}
+                  </p>
+                  {collection.productName && (
+                    <p className="text-sm text-muted-foreground">
+                      🏷️ {collection.productName}
+                    </p>
+                  )}
+                  <div className="mt-2 flex gap-4 text-sm">
+                    <span className="font-medium text-foreground">
+                      ⚖️ {collection.weight} kg
+                    </span>
+                    <span className="font-medium text-foreground">
+                      💰 R$ {collection.value.toLocaleString('pt-BR')}
+                    </span>
+                  </div>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  📅 {new Date(collection.date).toLocaleDateString('pt-BR')} às {collection.time}
-                </p>
-                <p className="text-sm text-muted-foreground">📍 {collection.location}</p>
-                <div className="mt-2 flex gap-4 text-sm">
-                  <span className="font-medium text-foreground">⚖️ {collection.weight} kg</span>
-                  <span className="font-medium text-foreground">💰 R$ {collection.value.toLocaleString('pt-BR')}</span>
+                <div className="flex gap-2">
+                  <Select
+                    value={collection.status}
+                    onValueChange={(value) =>
+                      handleStatusChange(collection.id, value)
+                    }
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="agendado">Agendado</SelectItem>
+                      <SelectItem value="confirmado">Confirmado</SelectItem>
+                      <SelectItem value="coletado">Coletado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleDelete(collection.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Select
-                  value={collection.status}
-                  onValueChange={(value) => handleStatusChange(collection.id, value)}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="agendado">Agendado</SelectItem>
-                    <SelectItem value="confirmado">Confirmado</SelectItem>
-                    <SelectItem value="coletado">Coletado</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="icon" onClick={() => handleDelete(collection.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
               </div>
             </div>
-          </div>
-        ))}
-        {filteredCollections.length === 0 && (
-          <p className="py-8 text-center text-muted-foreground">Nenhuma coleta encontrada</p>
+          ))
         )}
       </div>
     </Card>

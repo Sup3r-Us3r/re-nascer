@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
+import { useData } from '@/hooks/useData';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,8 @@ interface CollectionPointsTabProps {
 }
 
 export function CollectionPointsTab({ onEdit }: CollectionPointsTabProps) {
-  const { collectionPoints, deleteCollectionPoint } = useData();
+  const { collectionPoints, collectionPointsLoading, deleteCollectionPoint } =
+    useData();
   const [search, setSearch] = useState('');
 
   const filteredPoints = collectionPoints.filter(
@@ -22,10 +23,14 @@ export function CollectionPointsTab({ onEdit }: CollectionPointsTabProps) {
       p.address.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`Deseja realmente excluir o ponto de coleta ${name}?`)) {
-      deleteCollectionPoint(id);
-      toast.success('Ponto de coleta excluído com sucesso');
+      try {
+        await deleteCollectionPoint(id);
+        toast.success('Ponto de coleta excluído com sucesso');
+      } catch (error) {
+        // Error is already handled by the context
+      }
     }
   };
 
@@ -44,26 +49,48 @@ export function CollectionPointsTab({ onEdit }: CollectionPointsTabProps) {
       </div>
 
       <div className="space-y-4">
-        {filteredPoints.map((point) => (
-          <div key={point.id} className="flex items-center justify-between rounded-lg border border-border p-4">
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground">{point.name}</h3>
-              <p className="text-sm text-muted-foreground">{point.address}</p>
-              <p className="text-sm text-muted-foreground">{point.email} • {point.phone}</p>
-              <p className="mt-1 text-sm font-medium text-accent">Responsável: {point.responsible}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={() => onEdit(point)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={() => handleDelete(point.id, point.name)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
+        {collectionPointsLoading ? (
+          <div className="py-8 text-center text-muted-foreground">
+            Carregando pontos de coleta...
           </div>
-        ))}
-        {filteredPoints.length === 0 && (
-          <p className="py-8 text-center text-muted-foreground">Nenhum ponto de coleta encontrado</p>
+        ) : filteredPoints.length > 0 ? (
+          filteredPoints.map((point) => (
+            <div
+              key={point.id}
+              className="flex items-center justify-between rounded-lg border border-border p-4"
+            >
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground">{point.name}</h3>
+                <p className="text-sm text-muted-foreground">{point.address}</p>
+                <p className="text-sm text-muted-foreground">
+                  {point.email} • {point.phone}
+                </p>
+                <p className="mt-1 text-sm font-medium text-accent">
+                  Responsável: {point.responsible}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onEdit(point)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleDelete(point.id, point.name)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="py-8 text-center text-muted-foreground">
+            Nenhum ponto de coleta encontrado
+          </p>
         )}
       </div>
     </Card>

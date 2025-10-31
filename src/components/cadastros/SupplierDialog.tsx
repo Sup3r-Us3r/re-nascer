@@ -1,17 +1,35 @@
 import { useEffect } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useData } from '@/hooks/useData';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import InputMask from 'react-input-mask';
-import { Supplier } from '@/types';
+import { SupplierFrontend } from '@/types';
 
 const supplierSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome muito longo'),
@@ -28,10 +46,14 @@ type SupplierFormData = z.infer<typeof supplierSchema>;
 interface SupplierDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  supplier?: Supplier;
+  supplier?: SupplierFrontend;
 }
 
-export function SupplierDialog({ open, onOpenChange, supplier }: SupplierDialogProps) {
+export function SupplierDialog({
+  open,
+  onOpenChange,
+  supplier,
+}: SupplierDialogProps) {
   const { addSupplier, updateSupplier } = useData();
   const isEditing = !!supplier;
 
@@ -72,22 +94,28 @@ export function SupplierDialog({ open, onOpenChange, supplier }: SupplierDialogP
     }
   }, [supplier, form, open]);
 
-  const onSubmit = (data: SupplierFormData) => {
-    if (isEditing && supplier) {
-      updateSupplier(supplier.id, data as Omit<Supplier, 'id' | 'createdAt'>);
-      toast.success('Fornecedor atualizado com sucesso');
-    } else {
-      addSupplier(data as Omit<Supplier, 'id' | 'createdAt'>);
-      toast.success('Fornecedor cadastrado com sucesso');
+  const onSubmit = async (data: SupplierFormData) => {
+    try {
+      if (isEditing && supplier) {
+        await updateSupplier(supplier.id, data);
+        toast.success('Fornecedor atualizado com sucesso');
+      } else {
+        await addSupplier(data as Omit<SupplierFrontend, 'id' | 'createdAt'>);
+        toast.success('Fornecedor cadastrado com sucesso');
+      }
+      onOpenChange(false);
+    } catch (error) {
+      // Error handling is already done in the DataContext
     }
-    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -113,12 +141,17 @@ export function SupplierDialog({ open, onOpenChange, supplier }: SupplierDialogP
                     <FormLabel>CNPJ/CPF *</FormLabel>
                     <FormControl>
                       <InputMask
-                        mask={field.value?.replace(/\D/g, '').length <= 11 ? '999.999.999-999' : '99.999.999/9999-99'}
+                        mask={
+                          field.value?.replace(/\D/g, '').length <= 11
+                            ? '999.999.999-999'
+                            : '99.999.999/9999-99'
+                        }
                         value={field.value}
                         onChange={field.onChange}
                       >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} />}
+                        {(
+                          inputProps: React.InputHTMLAttributes<HTMLInputElement>
+                        ) => <Input {...inputProps} />}
                       </InputMask>
                     </FormControl>
                     <FormMessage />
@@ -137,8 +170,9 @@ export function SupplierDialog({ open, onOpenChange, supplier }: SupplierDialogP
                         value={field.value}
                         onChange={field.onChange}
                       >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} />}
+                        {(
+                          inputProps: React.InputHTMLAttributes<HTMLInputElement>
+                        ) => <Input {...inputProps} />}
                       </InputMask>
                     </FormControl>
                     <FormMessage />
@@ -208,10 +242,16 @@ export function SupplierDialog({ open, onOpenChange, supplier }: SupplierDialogP
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">{isEditing ? 'Atualizar' : 'Cadastrar'}</Button>
+              <Button type="submit">
+                {isEditing ? 'Atualizar' : 'Cadastrar'}
+              </Button>
             </div>
           </form>
         </Form>

@@ -10,7 +10,12 @@ import { SupplierDialog } from '@/components/cadastros/SupplierDialog';
 import { ClientDialog } from '@/components/cadastros/ClientDialog';
 import { CollectionPointDialog } from '@/components/cadastros/CollectionPointDialog';
 import { ProductTypeDialog } from '@/components/cadastros/ProductTypeDialog';
-import { Supplier, Client, CollectionPoint, ProductType } from '@/types';
+import {
+  SupplierFrontend,
+  Client,
+  CollectionPoint,
+  ProductType,
+} from '@/types';
 
 export default function Cadastros() {
   const [activeTab, setActiveTab] = useState('suppliers');
@@ -18,10 +23,16 @@ export default function Cadastros() {
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [pointDialogOpen, setPointDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | undefined>();
+  const [editingSupplier, setEditingSupplier] = useState<
+    SupplierFrontend | undefined
+  >();
   const [editingClient, setEditingClient] = useState<Client | undefined>();
-  const [editingPoint, setEditingPoint] = useState<CollectionPoint | undefined>();
-  const [editingProduct, setEditingProduct] = useState<ProductType | undefined>();
+  const [editingPoint, setEditingPoint] = useState<
+    CollectionPoint | undefined
+  >();
+  const [editingProduct, setEditingProduct] = useState<
+    ProductType | undefined
+  >();
 
   const handleAddNew = () => {
     switch (activeTab) {
@@ -44,7 +55,7 @@ export default function Cadastros() {
     }
   };
 
-  const handleEditSupplier = (supplier: Supplier) => {
+  const handleEditSupplier = (supplier: SupplierFrontend) => {
     setEditingSupplier(supplier);
     setSupplierDialogOpen(true);
   };
@@ -67,7 +78,9 @@ export default function Cadastros() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Gestão de Cadastros</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          Gestão de Cadastros
+        </h2>
         <Button onClick={handleAddNew} className="gap-2">
           <Plus className="h-4 w-4" />
           Novo Cadastro
@@ -99,23 +112,23 @@ export default function Cadastros() {
         </TabsContent>
       </Tabs>
 
-      <SupplierDialog 
-        open={supplierDialogOpen} 
-        onOpenChange={setSupplierDialogOpen} 
+      <SupplierDialog
+        open={supplierDialogOpen}
+        onOpenChange={setSupplierDialogOpen}
         supplier={editingSupplier}
       />
-      <ClientDialog 
-        open={clientDialogOpen} 
+      <ClientDialog
+        open={clientDialogOpen}
         onOpenChange={setClientDialogOpen}
         client={editingClient}
       />
-      <CollectionPointDialog 
-        open={pointDialogOpen} 
+      <CollectionPointDialog
+        open={pointDialogOpen}
         onOpenChange={setPointDialogOpen}
         point={editingPoint}
       />
-      <ProductTypeDialog 
-        open={productDialogOpen} 
+      <ProductTypeDialog
+        open={productDialogOpen}
         onOpenChange={setProductDialogOpen}
         product={editingProduct}
       />

@@ -1,9 +1,21 @@
 import { useEffect } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useData } from '@/hooks/useData';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,7 +39,11 @@ interface CollectionPointDialogProps {
   point?: CollectionPoint;
 }
 
-export function CollectionPointDialog({ open, onOpenChange, point }: CollectionPointDialogProps) {
+export function CollectionPointDialog({
+  open,
+  onOpenChange,
+  point,
+}: CollectionPointDialogProps) {
   const { addCollectionPoint, updateCollectionPoint } = useData();
   const isEditing = !!point;
 
@@ -62,22 +78,33 @@ export function CollectionPointDialog({ open, onOpenChange, point }: CollectionP
     }
   }, [point, form, open]);
 
-  const onSubmit = (data: PointFormData) => {
-    if (isEditing && point) {
-      updateCollectionPoint(point.id, data as Omit<CollectionPoint, 'id' | 'createdAt'>);
-      toast.success('Ponto de coleta atualizado com sucesso');
-    } else {
-      addCollectionPoint(data as Omit<CollectionPoint, 'id' | 'createdAt'>);
-      toast.success('Ponto de coleta cadastrado com sucesso');
+  const onSubmit = async (data: PointFormData) => {
+    try {
+      if (isEditing && point) {
+        await updateCollectionPoint(
+          point.id,
+          data as Omit<CollectionPoint, 'id' | 'createdAt'>
+        );
+        toast.success('Ponto de coleta atualizado com sucesso');
+      } else {
+        await addCollectionPoint(
+          data as Omit<CollectionPoint, 'id' | 'createdAt'>
+        );
+        toast.success('Ponto de coleta cadastrado com sucesso');
+      }
+      onOpenChange(false);
+    } catch (error) {
+      // Error is already handled by the context
     }
-    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Ponto de Coleta' : 'Novo Ponto de Coleta'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Editar Ponto de Coleta' : 'Novo Ponto de Coleta'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -133,8 +160,9 @@ export function CollectionPointDialog({ open, onOpenChange, point }: CollectionP
                         value={field.value}
                         onChange={field.onChange}
                       >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} />}
+                        {(
+                          inputProps: React.InputHTMLAttributes<HTMLInputElement>
+                        ) => <Input {...inputProps} />}
                       </InputMask>
                     </FormControl>
                     <FormMessage />
@@ -156,10 +184,16 @@ export function CollectionPointDialog({ open, onOpenChange, point }: CollectionP
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">{isEditing ? 'Atualizar' : 'Cadastrar'}</Button>
+              <Button type="submit">
+                {isEditing ? 'Atualizar' : 'Cadastrar'}
+              </Button>
             </div>
           </form>
         </Form>

@@ -1,9 +1,21 @@
 import { useEffect } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useData } from '@/hooks/useData';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,7 +39,11 @@ interface ClientDialogProps {
   client?: Client;
 }
 
-export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) {
+export function ClientDialog({
+  open,
+  onOpenChange,
+  client,
+}: ClientDialogProps) {
   const { addClient, updateClient } = useData();
   const isEditing = !!client;
 
@@ -62,22 +78,28 @@ export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) 
     }
   }, [client, form, open]);
 
-  const onSubmit = (data: ClientFormData) => {
-    if (isEditing && client) {
-      updateClient(client.id, data as Omit<Client, 'id' | 'createdAt'>);
-      toast.success('Cliente atualizado com sucesso');
-    } else {
-      addClient(data as Omit<Client, 'id' | 'createdAt'>);
-      toast.success('Cliente cadastrado com sucesso');
+  const onSubmit = async (data: ClientFormData) => {
+    try {
+      if (isEditing && client) {
+        await updateClient(client.id, data);
+        toast.success('Cliente atualizado com sucesso');
+      } else {
+        await addClient(data as Omit<Client, 'id' | 'createdAt'>);
+        toast.success('Cliente cadastrado com sucesso');
+      }
+      onOpenChange(false);
+    } catch (error) {
+      // Error handling is already done in the DataContext
     }
-    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? 'Editar Cliente' : 'Novo Cliente'}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -103,12 +125,17 @@ export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) 
                     <FormLabel>CNPJ/CPF *</FormLabel>
                     <FormControl>
                       <InputMask
-                        mask={field.value?.replace(/\D/g, '').length <= 11 ? '999.999.999-999' : '99.999.999/9999-99'}
+                        mask={
+                          field.value?.replace(/\D/g, '').length <= 11
+                            ? '999.999.999-999'
+                            : '99.999.999/9999-99'
+                        }
                         value={field.value}
                         onChange={field.onChange}
                       >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} />}
+                        {(
+                          inputProps: React.InputHTMLAttributes<HTMLInputElement>
+                        ) => <Input {...inputProps} />}
                       </InputMask>
                     </FormControl>
                     <FormMessage />
@@ -127,8 +154,9 @@ export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) 
                         value={field.value}
                         onChange={field.onChange}
                       >
-                        {/* @ts-ignore */}
-                        {(inputProps: any) => <Input {...inputProps} />}
+                        {(
+                          inputProps: React.InputHTMLAttributes<HTMLInputElement>
+                        ) => <Input {...inputProps} />}
                       </InputMask>
                     </FormControl>
                     <FormMessage />
@@ -163,10 +191,16 @@ export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) 
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit">{isEditing ? 'Atualizar' : 'Cadastrar'}</Button>
+              <Button type="submit">
+                {isEditing ? 'Atualizar' : 'Cadastrar'}
+              </Button>
             </div>
           </form>
         </Form>

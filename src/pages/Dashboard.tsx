@@ -1,10 +1,27 @@
 import { StatsCard } from '@/components/StatsCard';
-import { useData } from '@/contexts/DataContext';
+import { useData } from '@/hooks/useData';
 import { TrendingUp, Scale, DollarSign, Package } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--success))', 'hsl(var(--warning))'];
+const COLORS = [
+  'hsl(var(--primary))',
+  'hsl(var(--accent))',
+  'hsl(var(--success))',
+  'hsl(var(--warning))',
+];
 
 export default function Dashboard() {
   const { collections, sales, productTypes } = useData();
@@ -82,10 +99,15 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2">
         {/* Bar Chart - Monthly Overview */}
         <Card className="p-6">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">Movimentação Mensal</h3>
+          <h3 className="mb-4 text-lg font-semibold text-foreground">
+            Movimentação Mensal
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border))"
+              />
               <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
               <YAxis stroke="hsl(var(--muted-foreground))" />
               <Tooltip
@@ -96,15 +118,25 @@ export default function Dashboard() {
                 }}
               />
               <Legend />
-              <Bar dataKey="coletas" name="Coletas (kg)" fill="hsl(var(--primary))" />
-              <Bar dataKey="vendas" name="Vendas (kg)" fill="hsl(var(--accent))" />
+              <Bar
+                dataKey="coletas"
+                name="Coletas (kg)"
+                fill="hsl(var(--primary))"
+              />
+              <Bar
+                dataKey="vendas"
+                name="Vendas (kg)"
+                fill="hsl(var(--accent))"
+              />
             </BarChart>
           </ResponsiveContainer>
         </Card>
 
         {/* Pie Chart - Collections by Supplier */}
         <Card className="p-6">
-          <h3 className="mb-4 text-lg font-semibold text-foreground">Coletas por Fornecedor</h3>
+          <h3 className="mb-4 text-lg font-semibold text-foreground">
+            Coletas por Fornecedor
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -112,13 +144,18 @@ export default function Dashboard() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) =>
+                  `${name}: ${(percent * 100).toFixed(0)}%`
+                }
                 outerRadius={80}
                 fill="hsl(var(--primary))"
                 dataKey="value"
               >
                 {collectionsByType.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
                 ))}
               </Pie>
               <Tooltip
@@ -135,12 +172,18 @@ export default function Dashboard() {
 
       {/* Sales by Product Type */}
       <Card className="p-6">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">Vendas por Tipo de Produto</h3>
+        <h3 className="mb-4 text-lg font-semibold text-foreground">
+          Vendas por Tipo de Produto
+        </h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={salesByProduct} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
-            <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" />
+            <YAxis
+              dataKey="name"
+              type="category"
+              stroke="hsl(var(--muted-foreground))"
+            />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'hsl(var(--card))',

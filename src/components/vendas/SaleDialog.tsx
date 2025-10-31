@@ -1,10 +1,28 @@
 import { useEffect } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useData } from '@/hooks/useData';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,8 +31,21 @@ import { toast } from 'sonner';
 const saleSchema = z.object({
   clientId: z.string().min(1, 'Cliente é obrigatório'),
   productType: z.string().min(1, 'Tipo de produto é obrigatório'),
-  weight: z.string().min(1, 'Peso é obrigatório').refine((val) => !isNaN(parseFloat(val.replace(',', '.'))), 'Peso inválido'),
-  value: z.string().min(1, 'Valor é obrigatório').refine((val) => !isNaN(parseFloat(val.replace(/[R$\s.]/g, '').replace(',', '.'))), 'Valor inválido'),
+  weight: z
+    .string()
+    .min(1, 'Peso é obrigatório')
+    .refine(
+      (val) => !isNaN(parseFloat(val.replace(',', '.'))),
+      'Peso inválido'
+    ),
+  value: z
+    .string()
+    .min(1, 'Valor é obrigatório')
+    .refine(
+      (val) =>
+        !isNaN(parseFloat(val.replace(/[R$\s.]/g, '').replace(',', '.'))),
+      'Valor inválido'
+    ),
   date: z.string().min(1, 'Data é obrigatória'),
 });
 
@@ -171,7 +202,7 @@ export function SaleDialog({ open, onOpenChange }: SaleDialogProps) {
                         {...field}
                         placeholder="R$ 0,00"
                         onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, '');
+                          const value = e.target.value.replace(/\D/g, '');
                           if (value === '') {
                             field.onChange('');
                             return;
@@ -193,7 +224,11 @@ export function SaleDialog({ open, onOpenChange }: SaleDialogProps) {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancelar
               </Button>
               <Button type="submit">Registrar</Button>
