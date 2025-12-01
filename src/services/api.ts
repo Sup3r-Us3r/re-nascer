@@ -32,6 +32,10 @@ async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
       );
     }
 
+    if (response.status === 204) {
+      return;
+    }
+
     return response.json();
   } catch (error) {
     if (error instanceof ApiError) {
