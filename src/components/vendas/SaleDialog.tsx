@@ -86,10 +86,13 @@ export function SaleDialog({ open, onOpenChange }: SaleDialogProps) {
     const client = clients.find((c) => c.id === data.clientId);
     if (!client) return;
 
+    const productType = productTypes.find((p) => p.name === data.productType);
+    if (!productType) return;
+
     addSale({
       clientId: data.clientId,
       clientName: client.name,
-      productType: data.productType,
+      productId: productType.id,
       weight: parseFloat(data.weight.replace(',', '.')),
       value: parseFloat(data.value.replace(/[R$\s.]/g, '').replace(',', '.')),
       date: data.date,
